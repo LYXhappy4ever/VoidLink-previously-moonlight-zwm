@@ -40,9 +40,12 @@
         self.state = UIGestureRecognizerStateFailed;
         return;
     }
-    // Never intercept touches targeting on-screen widgets (including auto-docked edge slivers) or the floating keyboard button.
+    // Never intercept touches targeting on-screen widgets, floating keyboard button, quick action panel, or voice draft overlay.
     for (UIView *v = touch.view; v != nil; v = v.superview) {
-        if ([v isKindOfClass:[OnScreenWidgetView class]] || [v isKindOfClass:[FloatingKeyboardButton class]]) {
+        if ([v isKindOfClass:[OnScreenWidgetView class]] ||
+            [v isKindOfClass:[FloatingKeyboardButton class]] ||
+            [v isKindOfClass:[QuickActionPanelView class]] ||
+            [v isKindOfClass:[VoiceTextDraftOverlayView class]]) {
             self.state = UIGestureRecognizerStateFailed;
             return;
         }

@@ -339,10 +339,8 @@ static NSString * const KeyboardInputSentinel = @"\u200B";
     keyboardToggleRecognizer = [[CustomTapGestureRecognizer alloc] initWithTarget:self action:@selector(toggleKeyboard)];
     keyboardToggleRecognizer.numberOfTouchesRequired = numberOfTouches; //will be changed accordinly by touch modes.
     keyboardToggleRecognizer.tapDownTimeThreshold = 0.2; // tap down time threshold in seconds.
-    BOOL shouldDelayTouches = (numberOfTouches > 1);
-    keyboardToggleRecognizer.delaysTouchesBegan = shouldDelayTouches;
-    keyboardToggleRecognizer.delaysTouchesEnded = shouldDelayTouches;
-    keyboardToggleRecognizer.cancelsTouchesInView = YES;
+    keyboardToggleRecognizer.delaysTouchesBegan = NO;
+    keyboardToggleRecognizer.delaysTouchesEnded = NO;
     [self->_streamFrameTopLayerView addGestureRecognizer:keyboardToggleRecognizer];
     keyboardToggleRecognizer.touchCapturingView = self;
 #endif
