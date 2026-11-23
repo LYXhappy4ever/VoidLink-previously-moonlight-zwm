@@ -79,7 +79,7 @@ class TemporarySettings: NSObject {
     var streamingRadialMenuDelay: NSNumber!
     var controllerMousePointerVelocity: NSNumber!
     var controllerMouseExpo: NSNumber!
-    var swapABXYButtons: Bool = false
+    var swapABXYButtons: Bool = true
     var hapticEngine: NSNumber!
     var emulatedControllerType: NSNumber!
     var gyroMode: NSNumber!

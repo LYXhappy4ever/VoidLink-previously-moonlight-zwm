@@ -158,13 +158,14 @@ import UIKit
         action: (() -> Void)? = nil,
         completion: (() -> Void)? = nil
     ) {
-        var remainingSeconds = countdown
+        let effectiveCountdown = autoCompletion ? countdown : 0
+        var remainingSeconds = effectiveCountdown
         let originalMessage = message
-        let showsCountdownInButton = countdown > 0 &&
+        let showsCountdownInButton = effectiveCountdown > 0 &&
             !autoCompletion &&
             !PublicUtils.isRunningOnMacAsiPadApp &&
             !buttonTitle.isEmpty
-        let showsCountdownInMessage = countdown > 0 && !autoCompletion && !showsCountdownInButton
+        let showsCountdownInMessage = effectiveCountdown > 0 && !autoCompletion && !showsCountdownInButton
         var isAlertDismissed = false
         
         AlertControllerUtil.completion = completion
@@ -203,14 +204,14 @@ import UIKit
         if withCancel {alertController.addAction(cancelAction)}
         if buttonTitle != "" && !autoCompletion {alertController.addAction(confirmAction)}
         
-        if(countdown == 0) {
+        if(effectiveCountdown == 0) {
             confirmAction.isEnabled = buttonTitle != ""
         }
 
         viewController.present(alertController, animated: true, completion: action)
-        isCountingDown = !autoCompletion && countdown > 0
+        isCountingDown = !autoCompletion && effectiveCountdown > 0
         
-        if(countdown == 0) {return}
+        if(effectiveCountdown == 0) {return}
 
         // 倒计时
         let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.main)

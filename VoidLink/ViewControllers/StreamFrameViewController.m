@@ -118,6 +118,7 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     ToolboxViewController* toolBoxViewController;
 #if !TARGET_OS_TV
     FloatingKeyboardButton* _floatingKeyboardButton;
+    QuickActionPanelView* _quickActionPanel API_AVAILABLE(ios(13.0));
     BOOL _streamOrientationLockEnded;
 #endif
     CGPoint _appliedRestingOffset; // last portrait stream position applied at 1x
@@ -710,6 +711,19 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     
     if(!_viewJustLoaded) [_controllerSupport updateControllerSupport:self.streamConfig delegate:self];
     // reload controllerSupport obj, this is mandatory for OSC reload,especially when the stream view is launched without OSC
+    // Apply clean out-of-the-box defaults once so users start with a clean trackpad UI and Switch Pro Xbox layout.
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"vl_cleanDefaultsApplied_v1"]) {
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"vl_cleanDefaultsApplied_v1"];
+        _settings.onscreenControls = @(OnScreenControlsLevelOff);
+        _settings.floatingKeyboardButton = YES;
+        _settings.swapABXYButtons = YES;
+        _settings.emulatedControllerType = @(1);
+        _streamConfig.swapABXYButtons = YES;
+        if (_oscProfile) {
+            _oscProfile.touchMode = TouchModeRelative;
+        }
+    }
+
     [_streamView setupStreamViewWithControllerSupport:_controllerSupport interactionDelegate:self streamConfig:self.streamConfig gameProfile:_oscProfile streamFrameTopLayerView:self.view]; //reinitiate setupStreamView process.
     [self->_streamView reloadOnScreenControlsRealtimeWithControllerSupport:(ControllerSupport*)_controllerSupport
                                         streamConfig:(StreamConfiguration*)_streamConfig]; //reload OSC here.
@@ -927,39 +941,10 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
 #endif
 
 - (void)popKeyboardAndMouseStreamingTip {
-    [AlertControllerUtil showAlertIn:self
-                                    title:[LocalizationHelper localizedStringForKey:@"Keyboard/Mouse Connected"]
-                                  message:[LocalizationHelper localizedStringForKey:@"keyboard&MouseStreamingTip"]
-                               withCancel:NO
-                              buttonTitle:[LocalizationHelper localizedStringForKey:@"This tip won't be shown again"]
-                                countdown:5
-                                   action:^{}
-                               completion:^{
-                    }];
+    return;
 }
 
 - (void)popFirstStreamingTip {
-    // 初始化倒计时秒数
-    
-    NSString* settingsEdgeSide = _settings.slideToSettingsScreenEdge.intValue == UIRectEdgeLeft ? [LocalizationHelper localizedStringForKey:@"left"] : [LocalizationHelper localizedStringForKey:@"right"];
-    NSString* cmdToolEdgeSide = _settings.slideToSettingsScreenEdge.intValue == UIRectEdgeLeft ? [LocalizationHelper localizedStringForKey:@"right"] : [LocalizationHelper localizedStringForKey:@"left"];
-    uint8_t slideDist = (uint8_t)(_settings.slideToSettingsDistance.floatValue * 100);
-    // 创建弹窗
-    NSString* tipText = (PublicUtils.isRunningOnMacAsiPadApp
-    ? [LocalizationHelper localizedStringForKey:@"keyboard&MouseStreamingTip"]
-    : [LocalizationHelper localizedStringForKey:@"firstLaunchTip", settingsEdgeSide, slideDist, cmdToolEdgeSide, slideDist]);
-    
-    [AlertControllerUtil showAlertIn:self
-                                    title:[LocalizationHelper localizedStringForKey:@"First Launch Tips"]
-                                  message:tipText
-                               withCancel:NO
-                              buttonTitle:[LocalizationHelper localizedStringForKey:@"This tip won't be shown again"]
-                                countdown:16
-                                   action:^{}
-                               completion:^{
-        if(!PublicUtils.isRunningOnMacAsiPadApp && GenericUtils.isHardwareKeyboardConnected) [self popKeyboardAndMouseStreamingTip];
-    }];
-    
     return;
 }
 
@@ -1210,7 +1195,7 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
 #if !TARGET_OS_TV
 // Optional on-screen keyboard button (Others > Floating Keyboard Button), independent of custom on-screen widgets.
 - (void)updateFloatingKeyboardButton {
-    if (!_settings.floatingKeyboardButton) {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"vl_hideQuickFloatingButton"]) {
         [_floatingKeyboardButton removeFromSuperview];
         _floatingKeyboardButton = nil;
         return;
@@ -1220,7 +1205,7 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
         __weak StreamFrameViewController* weakSelf = self;
         _floatingKeyboardButton.onTap = ^{
             StreamFrameViewController* strongSelf = weakSelf;
-            if (strongSelf) [strongSelf->_streamView toggleSoftKeyboardFromButton];
+            if (strongSelf) [strongSelf toggleQuickActionPanel];
         };
         _floatingKeyboardButton.onDoubleTap = ^{
             StreamFrameViewController* strongSelf = weakSelf;
@@ -1230,6 +1215,50 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     [self.view addSubview:_floatingKeyboardButton];
     [self.view bringSubviewToFront:_floatingKeyboardButton];
     [_floatingKeyboardButton restorePosition];
+}
+
+- (void)toggleQuickActionPanel {
+    if (@available(iOS 13.0, *)) {
+        if (_quickActionPanel && _quickActionPanel.superview != nil) {
+            [_quickActionPanel dismissPanel];
+            return;
+        }
+        if (!_quickActionPanel) {
+            _quickActionPanel = [[QuickActionPanelView alloc] initWithFrame:CGRectZero];
+            __weak StreamFrameViewController* weakSelf = self;
+            _quickActionPanel.onOpenVoiceDraft = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf->_streamView openVoiceTextDraftOverlay];
+            };
+            _quickActionPanel.onToggleSoftKeyboard = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf->_streamView toggleSoftKeyboardFromButton];
+            };
+            _quickActionPanel.onToggleTouchMode = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf->_streamView toggleRelativeAndNativeTouchMode];
+            };
+            _quickActionPanel.currentTouchModeIsRelative = ^BOOL{
+                StreamFrameViewController* strongSelf = weakSelf;
+                return strongSelf ? [strongSelf->_streamView isRelativeTouchMode] : YES;
+            };
+            _quickActionPanel.onOpenToolbox = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf bringUpToolboxMenu];
+            };
+            _quickActionPanel.onOpenSettings = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf edgeSwiped];
+            };
+            _quickActionPanel.onDisconnect = ^{
+                StreamFrameViewController* strongSelf = weakSelf;
+                if (strongSelf) [strongSelf returnToMainFrame];
+            };
+        }
+        [_quickActionPanel presentIn:self.view];
+    } else {
+        [_streamView toggleSoftKeyboardFromButton];
+    }
 }
 
 - (void)viewDidLayoutSubviews {

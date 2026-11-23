@@ -1954,6 +1954,29 @@ static CGFloat previousRollAngle = 0;
 }
 
 #if !TARGET_OS_TV
+- (BOOL)isRelativeTouchMode {
+    return touchMode == TouchModeRelative;
+}
+
+- (void)toggleRelativeAndNativeTouchMode {
+    TouchMode nextMode = (touchMode == TouchModeRelative) ? TouchModeNative : TouchModeRelative;
+    OSCProfile *profile = [OSCProfilesManager.shared getSelectedProfile];
+    if (profile) {
+        profile.touchMode = nextMode;
+        [self reloadTouchHandlerWith:profile];
+    } else {
+        touchMode = nextMode;
+        if (nextMode == TouchModeRelative) {
+            keyboardToggleRecognizer.immediateTriggering = false;
+            self->touchHandler = [[RelativeTouchHandler alloc] initWithView:self andSettings:settings];
+        } else {
+            keyboardToggleRecognizer.immediateTriggering = false;
+            self->touchHandler = [[NativeTouchHandler alloc] initWithView:self settings:settings profile:nil];
+        }
+        sessionTouchHandler = touchHandler;
+    }
+}
+
 - (void)inputAccessoryBarDidTapClose:(InputAccessoryBar *)bar  API_AVAILABLE(ios(13.0)){
     [keyInputField resignFirstResponder];
     isInputingText = false;
