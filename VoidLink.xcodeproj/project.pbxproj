@@ -254,6 +254,7 @@
 		C0DE5A1E2F80000100000012 /* CursorInertia.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5A1E2F80000100000011 /* CursorInertia.swift */; };
 		C0DE5A1E2F80000100000013 /* CursorInertia.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5A1E2F80000100000011 /* CursorInertia.swift */; };
 		C0DE5A1E2F80000100000022 /* FloatingKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5A1E2F80000100000021 /* FloatingKeyboardButton.swift */; };
+		C0DE5A1E2F80000100000024 /* VoiceTextDraftOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5A1E2F80000100000023 /* VoiceTextDraftOverlayView.swift */; };
 		DC1F5A07206436B20037755F /* ConnectionHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = DC1F5A06206436B20037755F /* ConnectionHelper.m */; };
 		F74BEF9C2C1A705600224667 /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = F74BEF9B2C1A705600224667 /* OpenSSL */; };
 		FB1A674D2131E65900507771 /* KeyboardSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = FB1A674C2131E65900507771 /* KeyboardSupport.m */; };
@@ -520,6 +521,7 @@
 		B76B00022FFCC00100000002 /* KishiV3ProXLRumbler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KishiV3ProXLRumbler.swift; sourceTree = "<group>"; };
 		C0DE5A1E2F80000100000011 /* CursorInertia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInertia.swift; sourceTree = "<group>"; };
 		C0DE5A1E2F80000100000021 /* FloatingKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingKeyboardButton.swift; sourceTree = "<group>"; };
+		C0DE5A1E2F80000100000023 /* VoiceTextDraftOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTextDraftOverlayView.swift; sourceTree = "<group>"; };
 		DC1F5A05206436B10037755F /* ConnectionHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConnectionHelper.h; sourceTree = "<group>"; };
 		DC1F5A06206436B20037755F /* ConnectionHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConnectionHelper.m; sourceTree = "<group>"; };
 		FB1A674B2131E65900507771 /* KeyboardSupport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KeyboardSupport.h; sourceTree = "<group>"; };
@@ -1014,6 +1016,7 @@
 				18B317022EE67A39009B62C2 /* InertialScroller.swift */,
 				18951D1C2EBB6D2300A86E12 /* RelativeTouchGestureHandler.swift */,
 				C0DE5A1E2F80000100000021 /* FloatingKeyboardButton.swift */,
+				C0DE5A1E2F80000100000023 /* VoiceTextDraftOverlayView.swift */,
 				C0DE5A1E2F80000100000011 /* CursorInertia.swift */,
 				18A765BC2ECD51FB004784AA /* ControllerUtil.swift */,
 				A1C0DE002FBC000100000001 /* ControllerNavigator.swift */,
@@ -1569,6 +1572,7 @@
 				97E20DE02E2164A9000D5DCA /* FrameQueue.m in Sources */,
 				18951D1D2EBB6D2300A86E12 /* RelativeTouchGestureHandler.swift in Sources */,
 				C0DE5A1E2F80000100000022 /* FloatingKeyboardButton.swift in Sources */,
+				C0DE5A1E2F80000100000024 /* VoiceTextDraftOverlayView.swift in Sources */,
 				C0DE5A1E2F80000100000012 /* CursorInertia.swift in Sources */,
 				97E20DE12E2164A9000D5DCA /* FloatBuffer.m in Sources */,
 				18FCADAF2ECAC23200787A96 /* PencilHandler.swift in Sources */,

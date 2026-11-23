@@ -88,6 +88,7 @@ static NSString * const KeyboardInputSentinel = @"\u200B";
     NSDictionary<NSString *, NSNumber *> *dictCodes;
 #if !TARGET_OS_TV
     CustomTapGestureRecognizer *keyboardToggleRecognizer;
+    VoiceTextDraftOverlayView *voiceDraftOverlay API_AVAILABLE(ios(13.0));
 #endif
     UIPanGestureRecognizer *discreteMouseWheelRecognizer;
     UIPanGestureRecognizer *continuousMouseWheelRecognizer;
@@ -338,8 +339,10 @@ static NSString * const KeyboardInputSentinel = @"\u200B";
     keyboardToggleRecognizer = [[CustomTapGestureRecognizer alloc] initWithTarget:self action:@selector(toggleKeyboard)];
     keyboardToggleRecognizer.numberOfTouchesRequired = numberOfTouches; //will be changed accordinly by touch modes.
     keyboardToggleRecognizer.tapDownTimeThreshold = 0.2; // tap down time threshold in seconds.
-    keyboardToggleRecognizer.delaysTouchesBegan = NO;
-    keyboardToggleRecognizer.delaysTouchesEnded = NO;
+    BOOL shouldDelayTouches = (numberOfTouches > 1);
+    keyboardToggleRecognizer.delaysTouchesBegan = shouldDelayTouches;
+    keyboardToggleRecognizer.delaysTouchesEnded = shouldDelayTouches;
+    keyboardToggleRecognizer.cancelsTouchesInView = YES;
     [self->_streamFrameTopLayerView addGestureRecognizer:keyboardToggleRecognizer];
     keyboardToggleRecognizer.touchCapturingView = self;
 #endif
@@ -1955,6 +1958,31 @@ static CGFloat previousRollAngle = 0;
     [keyInputField resignFirstResponder];
     isInputingText = false;
 }
+
+- (void)inputAccessoryBarDidTapDraftInput:(InputAccessoryBar *)bar API_AVAILABLE(ios(13.0)) {
+    [self openVoiceTextDraftOverlay];
+}
+
+- (void)openVoiceTextDraftOverlay {
+    if (@available(iOS 13.0, *)) {
+        if (isInputingText) {
+            [keyInputField resignFirstResponder];
+            isInputingText = false;
+        }
+        if (!voiceDraftOverlay) {
+            voiceDraftOverlay = [[VoiceTextDraftOverlayView alloc] initWithFrame:CGRectZero];
+            __weak typeof(self) weakSelf = self;
+            voiceDraftOverlay.onClose = ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf becomeFirstResponder];
+                }
+            };
+        }
+        UIView *hostView = self->_streamFrameTopLayerView ? self->_streamFrameTopLayerView : self;
+        [voiceDraftOverlay presentIn:hostView];
+    }
+}
 #endif
 
 - (void)onKeyboardPressed:(UITextField *)textField {
@@ -1966,6 +1994,12 @@ static CGFloat previousRollAngle = 0;
 #else
 
     NSString* inputText = textField.text;
+    BOOL hasActiveModifiers = (keysDown.count > 0);
+    if (@available(iOS 13.0, *)) {
+        if ([keyInputField.inputAccessoryView isKindOfClass:[InputAccessoryBar class]]) {
+            hasActiveModifiers = hasActiveModifiers || ((InputAccessoryBar *)keyInputField.inputAccessoryView).hasLockedModifierKeys;
+        }
+    }
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         // If the text became empty, we know the user pressed the backspace key.
         if ([inputText isEqual:@""]) {
@@ -1981,15 +2015,31 @@ static CGFloat previousRollAngle = 0;
 #endif
         } else {
             NSUInteger sentinelLength = KeyboardInputSentinel.length;
-            
+            if (inputText.length <= sentinelLength) {
+                return;
+            }
+            NSString *textToSend = [inputText substringFromIndex:sentinelLength];
+
+            // Unless a modifier key (Ctrl/Alt/Win/Shift) is actively locked for a shortcut,
+            // send typed text via UTF-8 text injection so Windows Chinese IME does not
+            // intercept simulated English keystrokes as Pinyin composition.
+            if (!hasActiveModifiers) {
+                const char* utf8String = textToSend.UTF8String;
+                if (utf8String != NULL) {
+                    LiSendUtf8TextEvent(utf8String, (int)strlen(utf8String));
+                }
+                return;
+            }
+
             // Check if any characters exist which can't be represented in a basic key event
             for (NSUInteger i = sentinelLength; i < inputText.length; i++) {
                 struct KeyEvent event = [KeyboardSupport translateKeyEvent:[inputText characterAtIndex:i] withModifierFlags:0];
                 if (event.keycode == 0) {
                     // We found an unknown key, so send the entire string as UTF-8
-                    NSString *textToSend = [inputText substringFromIndex:sentinelLength];
                     const char* utf8String = textToSend.UTF8String;
-                    LiSendUtf8TextEvent(utf8String, (int)strlen(utf8String));
+                    if (utf8String != NULL) {
+                        LiSendUtf8TextEvent(utf8String, (int)strlen(utf8String));
+                    }
                     return;
                 }
             }

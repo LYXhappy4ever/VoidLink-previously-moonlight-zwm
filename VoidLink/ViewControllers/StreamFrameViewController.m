@@ -372,8 +372,9 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     _slideToSettingsRecognizer.edgeTolerance = _settings.edgeSlidingSensitivity.floatValue;
     _slideToSettingsRecognizer.edges = _settings.slideToSettingsScreenEdge.intValue;
     _slideToSettingsRecognizer.normalizedThresholdDistance = _settings.slideToSettingsDistance.floatValue;
-    _slideToSettingsRecognizer.delaysTouchesBegan = NO;
-    _slideToSettingsRecognizer.delaysTouchesEnded = NO;
+    _slideToSettingsRecognizer.delaysTouchesBegan = YES;
+    _slideToSettingsRecognizer.delaysTouchesEnded = YES;
+    _slideToSettingsRecognizer.cancelsTouchesInView = YES;
     [self.view addGestureRecognizer:_slideToSettingsRecognizer];
     
     
@@ -383,8 +384,9 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     if(_settings.slideToSettingsScreenEdge.intValue == UIRectEdgeLeft) _slideToToolboxRecognizer.edges = UIRectEdgeRight;
     else _slideToToolboxRecognizer.edges = UIRectEdgeLeft;  // _commandManager triggered by sliding from another side.
     _slideToToolboxRecognizer.normalizedThresholdDistance = _settings.slideToSettingsDistance.floatValue;
-    _slideToToolboxRecognizer.delaysTouchesBegan = NO;
-    _slideToToolboxRecognizer.delaysTouchesEnded = NO;
+    _slideToToolboxRecognizer.delaysTouchesBegan = YES;
+    _slideToToolboxRecognizer.delaysTouchesEnded = YES;
+    _slideToToolboxRecognizer.cancelsTouchesInView = YES;
     [self.view addGestureRecognizer:_slideToToolboxRecognizer];
     
     /*
@@ -1219,6 +1221,10 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
         _floatingKeyboardButton.onTap = ^{
             StreamFrameViewController* strongSelf = weakSelf;
             if (strongSelf) [strongSelf->_streamView toggleSoftKeyboardFromButton];
+        };
+        _floatingKeyboardButton.onDoubleTap = ^{
+            StreamFrameViewController* strongSelf = weakSelf;
+            if (strongSelf) [strongSelf->_streamView openVoiceTextDraftOverlay];
         };
     }
     [self.view addSubview:_floatingKeyboardButton];

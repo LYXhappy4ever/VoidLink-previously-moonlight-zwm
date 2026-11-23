@@ -895,10 +895,19 @@ static __weak ControllerSupport *VLSharedControllerSupport = nil;
     
     [_controllerStreamLock lock];
     @synchronized(controller) {
-        // Handle Start+Select+L1+R1 gamepad quit combo
+        // Handle Start+Select+L1+R1 gamepad quit combo with 0.5s hold debounce to prevent accidental exits
+        static NSTimeInterval quitComboStartTime = 0;
         if (controller.lastButtonFlags == (PLAY_FLAG | BACK_FLAG | LB_FLAG | RB_FLAG)) {
-            controller.lastButtonFlags = 0;
-            exitRequested = YES;
+            NSTimeInterval now = CACurrentMediaTime();
+            if (quitComboStartTime == 0) {
+                quitComboStartTime = now;
+            } else if (now - quitComboStartTime >= 0.5) {
+                quitComboStartTime = 0;
+                controller.lastButtonFlags = 0;
+                exitRequested = YES;
+            }
+        } else {
+            quitComboStartTime = 0;
         }
         
         // Only send controller events if we successfully reported controller arrival

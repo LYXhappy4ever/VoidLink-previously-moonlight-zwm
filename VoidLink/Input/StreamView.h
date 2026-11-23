@@ -91,6 +91,7 @@ NS_INLINE StreamInputGeometry StreamInputGeometryMake(CGRect bounds, CGFloat asp
 
 - (void)readyToBringUpSoftKeyboardByToolbox;
 - (void)toggleSoftKeyboardFromButton;
+- (void)openVoiceTextDraftOverlay;
 - (void)remoteTextInputForTvOS;
 - (void)keyboardWillShow:(NSNotification *)notification;
 - (void)keyboardWillHide;

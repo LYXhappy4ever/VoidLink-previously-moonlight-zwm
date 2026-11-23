@@ -12,66 +12,96 @@
 #import <UIKit/UIGestureRecognizerSubclass.h>
 #import "VoidLink-Swift.h"
 
-@implementation CustomEdgeSlideGestureRecognizer
-UITouch* capturedUITouch;
-CGFloat startPointX;
-//static CGFloat screenWidthInPoints;
+@implementation CustomEdgeSlideGestureRecognizer {
+    UITouch* _capturedUITouch;
+    CGFloat _startPointX;
+}
 
 - (instancetype)initWithTarget:(nullable id)target action:(nullable SEL)action {
     self = [super initWithTarget:target action:action];
-//    screenWidthInPoints = CGRectGetWidth([UIApplication.sharedApplication.windows.firstObject.screen bounds]); // Get the screen's bounds (in points)
     _immediateTriggering = false;
     _edgeTolerance = 10.0f;
     return self;
 }
 
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    // [super touchesBegan:touches withEvent:event];
-    UITouch *touch = [touches anyObject];
-    if(_excludePencilEvent && touch.type != UITouchTypeDirect) return;
-    capturedUITouch = touch;
-    startPointX = [capturedUITouch locationInView:self.view].x;
-    CGFloat streamFrameViewWidthInPoints = self.view.frame.size.width;
-    if(_immediateTriggering){
-        
-        if(self.edges & UIRectEdgeLeft){
-            if(startPointX < _edgeTolerance){
-                self.state = UIGestureRecognizerStateEnded;
-            }
-            // NSLog(@"startPointX  %f , normalizedGestureDeltaX %f", startPointX,  normalizedGestureDistance);
-        }
-        if(self.edges & UIRectEdgeRight){
-            if(startPointX > streamFrameViewWidthInPoints - _edgeTolerance){
-                self.state = UIGestureRecognizerStateEnded;
-            }
-           // NSLog(@"startPointX  %f , normalizedGestureDeltaX %f", startPointX,  normalizedGestureDistance);
-        }
+- (void)reset {
+    [super reset];
+    _capturedUITouch = nil;
+    _startPointX = 0;
+}
 
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (touches.count > 1 || _capturedUITouch != nil) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
+    }
+    UITouch *touch = [touches anyObject];
+    if (_excludePencilEvent && touch.type != UITouchTypeDirect) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
+    }
+    CGFloat startX = [touch locationInView:self.view].x;
+    CGFloat viewWidth = self.view.bounds.size.width;
+    BOOL inLeftEdge = (self.edges & UIRectEdgeLeft) && (startX < _edgeTolerance);
+    BOOL inRightEdge = (self.edges & UIRectEdgeRight) && (startX > viewWidth - _edgeTolerance);
+    if (!inLeftEdge && !inRightEdge) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
+    }
+
+    _capturedUITouch = touch;
+    _startPointX = startX;
+    if (_immediateTriggering) {
+        self.state = UIGestureRecognizerStateEnded;
+    } else {
+        self.state = UIGestureRecognizerStatePossible;
+    }
+}
+
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (_capturedUITouch == nil || ![touches containsObject:_capturedUITouch]) return;
+    if (OnScreenWidgetView.deferSlideGestureDueToAutoDockRestore) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
+    }
+    CGFloat currentX = [_capturedUITouch locationInView:self.view].x;
+    CGFloat viewWidth = self.view.bounds.size.width;
+    if (viewWidth <= 0) return;
+    CGFloat normalizedDistance = fabs(currentX - _startPointX) / viewWidth;
+    BOOL validDirection = ((self.edges & UIRectEdgeLeft) && currentX > _startPointX) ||
+                          ((self.edges & UIRectEdgeRight) && currentX < _startPointX);
+    if (validDirection && normalizedDistance > _normalizedThresholdDistance) {
+        self.state = UIGestureRecognizerStateEnded;
     }
 }
 
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    // [super touchesEnded:touches withEvent:event];
-    if(_excludePencilEvent && touches.anyObject.type != UITouchTypeDirect) return;
-    if(OnScreenWidgetView.deferSlideGestureDueToAutoDockRestore) return;
-    if([touches containsObject:capturedUITouch]){
-        CGFloat _endPointX = [capturedUITouch locationInView:self.view].x;
-        CGFloat screenWidthInPoints = self.view.frame.size.width;
-        CGFloat normalizedGestureDistance = fabs(_endPointX - startPointX)/screenWidthInPoints;
-        
-        if(self.edges & UIRectEdgeLeft){
-            if(startPointX < _edgeTolerance && normalizedGestureDistance > _normalizedThresholdDistance){
-                self.state = UIGestureRecognizerStateEnded;
-            }
-            // NSLog(@"startPointX  %f , normalizedGestureDeltaX %f", startPointX,  normalizedGestureDistance);
-        }
-        if(self.edges & UIRectEdgeRight){
-            if((startPointX > (screenWidthInPoints - _edgeTolerance)) && normalizedGestureDistance > _normalizedThresholdDistance){
-                self.state = UIGestureRecognizerStateEnded;
-            }
-           // NSLog(@"startPointX  %f , normalizedGestureDeltaX %f", startPointX,  normalizedGestureDistance);
-        }
+    if (_excludePencilEvent && touches.anyObject.type != UITouchTypeDirect) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
     }
+    if (OnScreenWidgetView.deferSlideGestureDueToAutoDockRestore) {
+        self.state = UIGestureRecognizerStateFailed;
+        return;
+    }
+    if (_capturedUITouch != nil && [touches containsObject:_capturedUITouch]) {
+        CGFloat endX = [_capturedUITouch locationInView:self.view].x;
+        CGFloat viewWidth = self.view.bounds.size.width;
+        CGFloat normalizedDistance = viewWidth > 0 ? fabs(endX - _startPointX) / viewWidth : 0;
+        BOOL inEdge = ((self.edges & UIRectEdgeLeft) && _startPointX < _edgeTolerance) ||
+                      ((self.edges & UIRectEdgeRight) && _startPointX > (viewWidth - _edgeTolerance));
+        if (inEdge && normalizedDistance > _normalizedThresholdDistance) {
+            self.state = UIGestureRecognizerStateEnded;
+        } else {
+            self.state = UIGestureRecognizerStateFailed;
+        }
+    } else {
+        self.state = UIGestureRecognizerStateFailed;
+    }
+}
+
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    self.state = UIGestureRecognizerStateFailed;
 }
 
 @end

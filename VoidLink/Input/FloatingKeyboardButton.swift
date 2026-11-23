@@ -16,6 +16,7 @@ import UIKit
     private static let defaultNormalizedCenter = CGPoint(x: 0.92, y: 0.72)
 
     @objc var onTap: (() -> Void)?
+    @objc var onDoubleTap: (() -> Void)?
 
     private let iconView = UIImageView()
     private var isDragging = false
@@ -48,8 +49,15 @@ import UIKit
         longPress.allowableMovement = 12
         addGestureRecognizer(longPress)
 
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
+        doubleTap.numberOfTapsRequired = 2
+        doubleTap.require(toFail: longPress)
+        addGestureRecognizer(doubleTap)
+
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tap.numberOfTapsRequired = 1
         tap.require(toFail: longPress)
+        tap.require(toFail: doubleTap)
         addGestureRecognizer(tap)
     }
 
@@ -60,6 +68,11 @@ import UIKit
     @objc private func handleTap() {
         flashHighlight()
         onTap?()
+    }
+
+    @objc private func handleDoubleTap() {
+        flashHighlight()
+        onDoubleTap?()
     }
 
     private func flashHighlight() {

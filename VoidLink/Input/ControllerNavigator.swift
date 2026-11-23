@@ -652,7 +652,8 @@ final class ControllerNavigator: NSObject {
             let showRadialMenu = mainFrameVC.isStreaming() ? streamFrameVC?.hasNoPresentedVC == true : (mainFrameVC.hasNoPresentedVC || mainFrameVC.presentedViewController is LoadingFrameViewController)
             
             if showRadialMenu {
-                radialMenuView?.removeFromSuperview()
+                radialMenuView?.dismiss()
+                radialMenuView = nil
                 RadialMenuOverlayView.menuSectors.removeAll()
                 
                 if radialMenuState == .disconnectAndQuit {
@@ -778,14 +779,14 @@ final class ControllerNavigator: NSObject {
     }
     
     @objc static func dimissRadialMenu() {
-        guard CACurrentMediaTime() - radialMenuPressDownTimestamp > 0.035 else {
-            return
-        }
+        let pressDuration = CACurrentMediaTime() - radialMenuPressDownTimestamp
         radialMenuButtonPressed = false
         radialMenuDelayTimer?.clean()
         stickReleasedInRadialMenu = false
-        if radialMenuView == nil, let vc = uiNavigationDelegate as? StreamFrameViewController, vc.hasNoPresentedVC {
-            ControllerSupport.sharedInstance()?.sendNavigationButtonPress()
+        if radialMenuView == nil {
+            if pressDuration > 0.035, let vc = uiNavigationDelegate as? StreamFrameViewController, vc.hasNoPresentedVC {
+                ControllerSupport.sharedInstance()?.sendNavigationButtonPress()
+            }
             return
         }
         radialMenuView?.dismiss()

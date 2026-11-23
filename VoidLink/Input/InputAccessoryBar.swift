@@ -13,6 +13,7 @@ import CoreData
 @objc
 protocol InputAccessoryBarDelegate: AnyObject {
     @objc func inputAccessoryBarDidTapClose(_ bar: InputAccessoryBar)
+    @objc optional func inputAccessoryBarDidTapDraftInput(_ bar: InputAccessoryBar)
     // @objc func inputAccessoryBarDidTapAdd(_ bar: InputAccessoryBar)
     // @objc(inputAccessoryBar:didTapItemAtIndex:)
     // optional func inputAccessoryBar(_ bar: InputAccessoryBar, didTapItemAt index: Int)
@@ -507,6 +508,7 @@ final class InputAccessoryBar: UIView, UIScrollViewDelegate, WidgetPickerViewCon
     @objc weak var delegate: InputAccessoryBarDelegate?
 
     private let closeButton = InputAccessoryCapsuleButton(kind: .circular(symbolName: "xmark"))
+    private let draftButton = InputAccessoryCapsuleButton(kind: .circular(symbolName: "waveform.and.mic"))
     private let addButton = InputAccessoryCapsuleButton(kind: .circular(symbolName: "plus"))
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
@@ -590,8 +592,10 @@ final class InputAccessoryBar: UIView, UIScrollViewDelegate, WidgetPickerViewCon
         let closeX = leadingInset
 
         closeButton.frame = CGRect(x: closeX, y: sideY, width: sideSize, height: sideSize)
+        let draftX = closeButton.frame.maxX + InputAccessoryBarMetrics.itemSpacing
+        draftButton.frame = CGRect(x: draftX, y: sideY, width: sideSize, height: sideSize)
 
-        let contentStartX = closeButton.frame.maxX + InputAccessoryBarMetrics.interSectionSpacing
+        let contentStartX = draftButton.frame.maxX + InputAccessoryBarMetrics.interSectionSpacing
         let maxAddX = bounds.width - trailingInset - sideSize
         let contentWidth = measuredStackWidth()
         let idealAddX = contentStartX + contentWidth + InputAccessoryBarMetrics.interSectionSpacing
@@ -633,9 +637,11 @@ final class InputAccessoryBar: UIView, UIScrollViewDelegate, WidgetPickerViewCon
         stackView.spacing = InputAccessoryBarMetrics.itemSpacing
 
         closeButton.addTarget(self, action: #selector(handleCloseTap), for: .touchUpInside)
+        draftButton.addTarget(self, action: #selector(handleDraftTap), for: .touchUpInside)
         addButton.addTarget(self, action: #selector(handleAddTap), for: .touchUpInside)
 
         addSubview(closeButton)
+        addSubview(draftButton)
         addSubview(scrollView)
         addSubview(addButton)
         scrollView.addSubview(stackView)
@@ -789,6 +795,10 @@ final class InputAccessoryBar: UIView, UIScrollViewDelegate, WidgetPickerViewCon
         updateScrollMask()
     }
 
+    @objc var hasLockedModifierKeys: Bool {
+        itemViews.contains { $0.button.isTapToToggleMode && $0.button.isLogicallyPressed }
+    }
+
     @objc func releasePressedKeys() {
         for item in itemViews {
             if item.button.isTapToToggleMode, item.button.isLogicallyPressed {
@@ -796,6 +806,16 @@ final class InputAccessoryBar: UIView, UIScrollViewDelegate, WidgetPickerViewCon
                 CommandManager.shared.sendAutoReleaseComboCommand(cmdStrings: comboButtons, releaseOnly: true)
             }
         }
+    }
+
+    @objc private func handleDraftTap() {
+        if InputAccessoryBar.isEditingItems {
+            endEditingMode(saveChanges: true)
+        }
+        if isDetachedOverlayBar {
+            Self.dismissDetachedOverlayBarIfNeeded()
+        }
+        delegate?.inputAccessoryBarDidTapDraftInput?(self)
     }
     
     @objc private func handleCloseTap() {
