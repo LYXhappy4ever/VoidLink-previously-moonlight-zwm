@@ -3856,7 +3856,7 @@ import ObjectiveC.runtime
         
     // MARK: - Auto Dock
     private static let autoDockExposedEdgeLength: CGFloat = PublicUtils.isIPhone ? 70 : 90
-    private static let autoDockExposedThickness: CGFloat = 17
+    private static let autoDockExposedThickness: CGFloat = 24
     private static let autoDockVerticalInset: CGFloat = 12
     @objc var autoDockIdleDuration: TimeInterval = 0
     @objc var storedAutoDockIdleDuration: TimeInterval = 0
@@ -3978,6 +3978,13 @@ import ObjectiveC.runtime
     @objc public func restoreFromAutoDock(animated: Bool) {
         guard autoDockEnabled else { return }
         autoDockRestoreWidget(animated: animated)
+    }
+
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        if autoDockIsDocked && !isHidden && alpha > 0.01 {
+            return bounds.insetBy(dx: -24, dy: -24).contains(point)
+        }
+        return super.point(inside: point, with: event)
     }
     
     @objc func autoDockStopCountdown() {

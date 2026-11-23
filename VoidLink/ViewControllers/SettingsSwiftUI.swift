@@ -1246,7 +1246,7 @@ final class SettingsItemRegistry: ObservableObject {
     let ctrlDownForPinch = SettingsItemModel<Bool>(id: .ctrlDownForPinch, value: true)
     let scrollSensitivity = SettingsItemModel<Double>(id: .scrollSensitivity, value: 1)
     let pinchSensitivity = SettingsItemModel<Double>(id: .pinchSensitivity, value: 1)
-    let floatingKeyboardButton = SettingsItemModel<Bool>(id: .floatingKeyboardButton, value: false)
+    let floatingKeyboardButton = SettingsItemModel<Bool>(id: .floatingKeyboardButton, value: true)
     let onScreenWidget = SettingsItemModel<Int>(id: .onScreenWidget, value: 0)
     let buttonVisualFeedback = SettingsItemModel<Bool>(id: .buttonVisualFeedback, value: true)
     let trackTouchPoint = SettingsItemModel<Bool>(id: .trackTouchPoint, value: false)

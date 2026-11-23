@@ -40,6 +40,13 @@
         self.state = UIGestureRecognizerStateFailed;
         return;
     }
+    // Never intercept touches targeting on-screen widgets (including auto-docked edge slivers) or the floating keyboard button.
+    for (UIView *v = touch.view; v != nil; v = v.superview) {
+        if ([v isKindOfClass:[OnScreenWidgetView class]] || [v isKindOfClass:[FloatingKeyboardButton class]]) {
+            self.state = UIGestureRecognizerStateFailed;
+            return;
+        }
+    }
     CGFloat startX = [touch locationInView:self.view].x;
     CGFloat viewWidth = self.view.bounds.size.width;
     BOOL inLeftEdge = (self.edges & UIRectEdgeLeft) && (startX < _edgeTolerance);

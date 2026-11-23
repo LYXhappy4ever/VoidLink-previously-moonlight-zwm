@@ -65,7 +65,7 @@ class TemporarySettings: NSObject {
     var ctrlDownForPinch: Bool = false
     var scrollSensitivity: NSNumber!
     var pinchSensitivity: NSNumber!
-    var floatingKeyboardButton: Bool = false
+    var floatingKeyboardButton: Bool = true
     var onscreenControls: NSNumber!
     var buttonVisualFeedback: Bool = false
     var touchPointTracking: Bool = false
