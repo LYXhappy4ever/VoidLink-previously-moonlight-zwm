@@ -300,7 +300,7 @@ final class VoiceTextDraftOverlayView: UIView, UITextViewDelegate {
                 let byteLen = s.utf8.count
                 if currentBytes + byteLen > maxBytesPerChunk && !currentChunk.isEmpty {
                     currentChunk.withCString { ptr in
-                        LiSendUtf8TextEvent(ptr, Int32(strlen(ptr)))
+                        LiSendUtf8TextEvent(ptr, UInt32(strlen(ptr)))
                     }
                     usleep(5_000)
                     currentChunk = s
@@ -313,7 +313,7 @@ final class VoiceTextDraftOverlayView: UIView, UITextViewDelegate {
 
             if !currentChunk.isEmpty {
                 currentChunk.withCString { ptr in
-                    LiSendUtf8TextEvent(ptr, Int32(strlen(ptr)))
+                    LiSendUtf8TextEvent(ptr, UInt32(strlen(ptr)))
                 }
             }
         }
