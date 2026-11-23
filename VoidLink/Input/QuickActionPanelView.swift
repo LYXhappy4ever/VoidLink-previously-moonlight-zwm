@@ -158,7 +158,7 @@ final class QuickActionPanelView: UIView {
             backdropView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             panelView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            panelView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -14),
+            panelView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
             panelView.leadingAnchor.constraint(greaterThanOrEqualTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
             panelView.trailingAnchor.constraint(lessThanOrEqualTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
             panelView.widthAnchor.constraint(lessThanOrEqualToConstant: 860),
@@ -294,36 +294,42 @@ final class QuickActionPanelView: UIView {
     }
 
     private func toggleModifierKey(_ code: Int16) {
+        let vk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: code))
+        let mod = modifierFlag(for: code)
         if lockedModifiers.contains(code) {
             lockedModifiers.remove(code)
             modifierButtons[code]?.backgroundColor = UIColor.white.withAlphaComponent(0.22)
             DispatchQueue.global(qos: .userInitiated).async {
-                LiSendKeyboardEvent(code, Int8(KEY_ACTION_UP), 0)
+                LiSendKeyboardEvent(vk, Int8(KEY_ACTION_UP), mod)
             }
         } else {
             lockedModifiers.insert(code)
             modifierButtons[code]?.backgroundColor = .systemBlue
             DispatchQueue.global(qos: .userInitiated).async {
-                LiSendKeyboardEvent(code, Int8(KEY_ACTION_DOWN), 0)
+                LiSendKeyboardEvent(vk, Int8(KEY_ACTION_DOWN), mod)
             }
         }
     }
 
     private func sendPCKeyWithModifiers(_ code: Int16) {
         let activeMods = Array(lockedModifiers)
+        var modMask: Int8 = 0
+        for m in activeMods {
+            modMask |= modifierFlag(for: m)
+            modifierButtons[m]?.backgroundColor = UIColor.white.withAlphaComponent(0.22)
+        }
         if !activeMods.isEmpty {
-            for m in activeMods {
-                modifierButtons[m]?.backgroundColor = UIColor.white.withAlphaComponent(0.22)
-            }
             lockedModifiers.removeAll()
         }
+        let vk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: code))
         DispatchQueue.global(qos: .userInitiated).async {
-            LiSendKeyboardEvent(code, Int8(KEY_ACTION_DOWN), 0)
+            LiSendKeyboardEvent(vk, Int8(KEY_ACTION_DOWN), modMask)
             usleep(30_000)
-            LiSendKeyboardEvent(code, Int8(KEY_ACTION_UP), 0)
+            LiSendKeyboardEvent(vk, Int8(KEY_ACTION_UP), modMask)
             for m in activeMods {
                 usleep(10_000)
-                LiSendKeyboardEvent(m, Int8(KEY_ACTION_UP), 0)
+                let mvk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: m))
+                LiSendKeyboardEvent(mvk, Int8(KEY_ACTION_UP), 0)
             }
         }
     }
@@ -337,7 +343,8 @@ final class QuickActionPanelView: UIView {
         }
         DispatchQueue.global(qos: .userInitiated).async {
             for m in mods {
-                LiSendKeyboardEvent(m, Int8(KEY_ACTION_UP), 0)
+                let mvk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: m))
+                LiSendKeyboardEvent(mvk, Int8(KEY_ACTION_UP), 0)
             }
         }
     }
@@ -347,16 +354,18 @@ final class QuickActionPanelView: UIView {
     @objc private func handlePttDown() {
         pttButton.backgroundColor = .systemRed
         pttButton.setTitle(" 松开结束说话", for: .normal)
+        let vk = Int16(bitPattern: 0x8000 | 0x00A4) // Left Alt
         DispatchQueue.global(qos: .userInitiated).async {
-            LiSendKeyboardEvent(0xA4, Int8(KEY_ACTION_DOWN), 0) // Left Alt DOWN
+            LiSendKeyboardEvent(vk, Int8(KEY_ACTION_DOWN), Int8(MODIFIER_ALT))
         }
     }
 
     @objc private func handlePttUp() {
         pttButton.backgroundColor = .systemBlue
         pttButton.setTitle(" 按住说话 (左Alt)", for: .normal)
+        let vk = Int16(bitPattern: 0x8000 | 0x00A4)
         DispatchQueue.global(qos: .userInitiated).async {
-            LiSendKeyboardEvent(0xA4, Int8(KEY_ACTION_UP), 0) // Left Alt UP
+            LiSendKeyboardEvent(vk, Int8(KEY_ACTION_UP), 0)
         }
     }
 
@@ -397,16 +406,31 @@ final class QuickActionPanelView: UIView {
         VoiceTextDraftOverlayView.sendUtf8TextSafely(clip)
     }
 
+    private func modifierFlag(for code: Int16) -> Int8 {
+        switch code {
+        case 0x10, 0xA0, 0xA1: return Int8(MODIFIER_SHIFT)
+        case 0x11, 0xA2, 0xA3: return Int8(MODIFIER_CTRL)
+        case 0x12, 0xA4, 0xA5: return Int8(MODIFIER_ALT)
+        case 0x5B, 0x5C: return Int8(MODIFIER_META)
+        default: return 0
+        }
+    }
+
     private func sendCombo(_ keys: [Int16]) {
         guard !keys.isEmpty else { return }
         DispatchQueue.global(qos: .userInitiated).async {
+            var activeMask: Int8 = 0
             for k in keys {
-                LiSendKeyboardEvent(k, Int8(KEY_ACTION_DOWN), 0)
+                activeMask |= self.modifierFlag(for: k)
+                let vk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: k))
+                LiSendKeyboardEvent(vk, Int8(KEY_ACTION_DOWN), activeMask)
                 usleep(12_000)
             }
             usleep(35_000)
             for k in keys.reversed() {
-                LiSendKeyboardEvent(k, Int8(KEY_ACTION_UP), 0)
+                activeMask &= ~self.modifierFlag(for: k)
+                let vk = Int16(bitPattern: 0x8000 | UInt16(bitPattern: k))
+                LiSendKeyboardEvent(vk, Int8(KEY_ACTION_UP), activeMask)
                 usleep(12_000)
             }
         }
