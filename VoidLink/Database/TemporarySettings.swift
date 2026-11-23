@@ -126,7 +126,7 @@ class TemporarySettings: NSObject {
 
     var playAudioOnPC: Bool = false
     var localVolume: NSNumber!
-    var redirectMic: Bool = false
+    var redirectMic: Bool = true
     var useBuiltinMic: Bool = false
     var micVolume: NSNumber!
     var duckOtherApps: Bool = false

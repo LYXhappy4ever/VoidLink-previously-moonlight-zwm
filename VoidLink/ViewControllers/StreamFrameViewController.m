@@ -711,11 +711,13 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     
     if(!_viewJustLoaded) [_controllerSupport updateControllerSupport:self.streamConfig delegate:self];
     // reload controllerSupport obj, this is mandatory for OSC reload,especially when the stream view is launched without OSC
-    // Apply clean out-of-the-box defaults once so users start with a clean trackpad UI and Switch Pro Xbox layout.
-    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"vl_cleanDefaultsApplied_v1"]) {
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"vl_cleanDefaultsApplied_v1"];
+    // Apply clean out-of-the-box defaults once so users start with a clean trackpad UI, mic redirect, and Switch Pro Xbox layout.
+    BOOL needCleanV2 = ![[NSUserDefaults standardUserDefaults] boolForKey:@"vl_cleanDefaultsApplied_v2"];
+    if (needCleanV2) {
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"vl_cleanDefaultsApplied_v2"];
         _settings.onscreenControls = @(OnScreenControlsLevelOff);
         _settings.floatingKeyboardButton = YES;
+        _settings.redirectMic = YES;
         _settings.swapABXYButtons = YES;
         _settings.emulatedControllerType = @(1);
         _streamConfig.swapABXYButtons = YES;
@@ -725,6 +727,9 @@ static __weak StreamFrameViewController *VLSharedStreamFrameViewController = nil
     }
 
     [_streamView setupStreamViewWithControllerSupport:_controllerSupport interactionDelegate:self streamConfig:self.streamConfig gameProfile:_oscProfile streamFrameTopLayerView:self.view]; //reinitiate setupStreamView process.
+    if (needCleanV2 && ![_streamView isRelativeTouchMode]) {
+        [_streamView toggleRelativeAndNativeTouchMode];
+    }
     [self->_streamView reloadOnScreenControlsRealtimeWithControllerSupport:(ControllerSupport*)_controllerSupport
                                         streamConfig:(StreamConfiguration*)_streamConfig]; //reload OSC here.
     

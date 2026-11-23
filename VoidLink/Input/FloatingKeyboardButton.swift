@@ -49,15 +49,9 @@ import UIKit
         longPress.allowableMovement = 12
         addGestureRecognizer(longPress)
 
-        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
-        doubleTap.numberOfTapsRequired = 2
-        doubleTap.require(toFail: longPress)
-        addGestureRecognizer(doubleTap)
-
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         tap.numberOfTapsRequired = 1
         tap.require(toFail: longPress)
-        tap.require(toFail: doubleTap)
         addGestureRecognizer(tap)
     }
 
