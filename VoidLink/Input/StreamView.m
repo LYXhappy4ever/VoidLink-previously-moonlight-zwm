@@ -1960,21 +1960,17 @@ static CGFloat previousRollAngle = 0;
 
 - (void)toggleRelativeAndNativeTouchMode {
     TouchMode nextMode = (touchMode == TouchModeRelative) ? TouchModeNative : TouchModeRelative;
-    OSCProfile *profile = [OSCProfilesManager.shared getSelectedProfile];
-    if (profile) {
-        profile.touchMode = nextMode;
-        [self reloadTouchHandlerWith:profile];
-    } else {
-        touchMode = nextMode;
-        if (nextMode == TouchModeRelative) {
-            keyboardToggleRecognizer.immediateTriggering = false;
-            self->touchHandler = [[RelativeTouchHandler alloc] initWithView:self andSettings:settings];
-        } else {
-            keyboardToggleRecognizer.immediateTriggering = false;
-            self->touchHandler = [[NativeTouchHandler alloc] initWithView:self settings:settings profile:nil];
-        }
-        sessionTouchHandler = touchHandler;
+    if ([sessionTouchHandler isKindOfClass:[RelativeTouchHandler class]]) {
+        [(RelativeTouchHandler*)sessionTouchHandler reset];
     }
+    touchMode = nextMode;
+    keyboardToggleRecognizer.immediateTriggering = false;
+    if (nextMode == TouchModeRelative) {
+        self->touchHandler = [[RelativeTouchHandler alloc] initWithView:self andSettings:settings];
+    } else {
+        self->touchHandler = [[NativeTouchHandler alloc] initWithView:self settings:settings profile:nil];
+    }
+    sessionTouchHandler = touchHandler;
 }
 
 - (void)inputAccessoryBarDidTapClose:(InputAccessoryBar *)bar  API_AVAILABLE(ios(13.0)){
