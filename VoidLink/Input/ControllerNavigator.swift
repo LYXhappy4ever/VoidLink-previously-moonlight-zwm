@@ -251,7 +251,7 @@ final class ControllerNavigator: NSObject {
     
     @objc static var localRadialMenuButton: ControllerElement = .leftShoulder
     @objc static var customPositionForLocalRadialMenuButton: ControllerElementPosition = .left
-    @objc static var streamingRadialMenuButton: ControllerElement = .back
+    @objc static var streamingRadialMenuButton: ControllerElement = .select
     @objc static var customPositionForStreamingRadialMenuButton: ControllerElementPosition = .left
     @objc static var streamingRadialMenuDelay: TimeInterval = 0
     
